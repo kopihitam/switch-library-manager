@@ -63,7 +63,37 @@ $(function () {
         currTableExportKind = exportKind;
     }
 
+    const tableResizeObservers = new Set();
+
+    // Without the virtual renderer, Tabulator re-fits columns only on window resize events.
+    // Also re-fit when the table's own width changes, e.g. when the tab's vertical scrollbar
+    // appears, so fitColumns tables never overflow sideways.
+    function refitColumnsOnResize(table) {
+        if (typeof ResizeObserver === "undefined") {
+            return;
+        }
+
+        let width = table.element.clientWidth;
+        let frame;
+        const observer = new ResizeObserver(() => {
+            const nextWidth = table.element.clientWidth;
+            if (!nextWidth || nextWidth === width) {
+                return;
+            }
+            width = nextWidth;
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => table.redraw());
+        });
+        observer.observe(table.element);
+        tableResizeObservers.add(observer);
+    }
+
     function destroyTables() {
+        for (const observer of tableResizeObservers) {
+            observer.disconnect();
+        }
+        tableResizeObservers.clear();
+
         for (const table of activeTables) {
             table.destroy();
         }
@@ -855,11 +885,16 @@ $(function () {
                 $(target).html(html);
                 if (missingDlcRows.length) {
                     createTable("#dlc-table", gameDetailsTableOptions(rememberColumnOrder({
-                        // Share the window width so every column stays visible; long names wrap.
+                        // Every column shares the window width in proportion, so nothing scrolls
+                        // sideways at any window size; text wraps instead (see #dlc-table in app.css).
                         layout:"fitColumns",
+                        columnMinWidth:24,
                         // Classic rendering re-measures wrapped rows after columns are sized
                         // and on window resize; the virtual renderer keeps stale row heights.
                         virtualDom:false,
+                        tableBuilt: function () {
+                            refitColumnsOnResize(this);
+                        },
                         sortOrderReverse:true,
                         initialSort:[
                             {column:"dlc.release_date", dir:"desc"},
@@ -870,16 +905,16 @@ $(function () {
                         ],
                         data: missingDlcRows,
                         columns: [
-                            {formatter:"rownum",download:false,width:50},
-                            {title: "Missing DLC", field: "dlc.name", headerFilter:"input", formatter:"textarea", widthGrow:3, minWidth:200},
-                            {title: "DLC ID", field: "dlc.id", headerFilter:"input", width:150},
-                            {title: "Release date", field: "dlc.release_date", sorter:"date", sorterParams:{format:"YYYY-MM-DD", alignEmptyValues:"bottom"}, width:125, formatter: function (cell) {
+                            {formatter:"rownum",download:false,width:40},
+                            {title: "Missing DLC", field: "dlc.name", headerFilter:"input", formatter:"textarea", widthGrow:3},
+                            {title: "DLC ID", field: "dlc.id", headerFilter:"input", widthGrow:1.3},
+                            {title: "Release date", field: "dlc.release_date", sorter:"date", sorterParams:{format:"YYYY-MM-DD", alignEmptyValues:"bottom"}, widthGrow:1, formatter: function (cell) {
                                 const content = document.createElement("span");
                                 content.textContent = cell.getValue() || "Unknown";
                                 return content;
                             }},
-                            {title: "Title", field: "game.name", headerFilter:"input", formatter:"textarea", widthGrow:2, minWidth:150},
-                            {title: "Title ID", field: "game.id", headerFilter:"input", width:150}
+                            {title: "Title", field: "game.name", headerFilter:"input", formatter:"textarea", widthGrow:2},
+                            {title: "Title ID", field: "game.id", headerFilter:"input", widthGrow:1.3}
                         ],
                     }, "missing_dlc", browserStorage()), "dlc"), "missing_dlc");
                 }
