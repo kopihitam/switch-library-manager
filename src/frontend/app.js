@@ -855,7 +855,11 @@ $(function () {
                 $(target).html(html);
                 if (missingDlcRows.length) {
                     createTable("#dlc-table", gameDetailsTableOptions(rememberColumnOrder({
-                        layout:"fitDataStretch",
+                        // Share the window width so every column stays visible; long names wrap.
+                        layout:"fitColumns",
+                        // Classic rendering re-measures wrapped rows after columns are sized
+                        // and on window resize; the virtual renderer keeps stale row heights.
+                        virtualDom:false,
                         sortOrderReverse:true,
                         initialSort:[
                             {column:"dlc.release_date", dir:"desc"},
@@ -866,16 +870,16 @@ $(function () {
                         ],
                         data: missingDlcRows,
                         columns: [
-                            {formatter:"rownum",download:false},
-                            {title: "Missing DLC", field: "dlc.name", headerFilter:"input", formatter:"textarea"},
-                            {title: "DLC ID", field: "dlc.id", headerFilter:"input"},
-                            {title: "Release date", field: "dlc.release_date", sorter:"date", sorterParams:{format:"YYYY-MM-DD", alignEmptyValues:"bottom"}, formatter: function (cell) {
+                            {formatter:"rownum",download:false,width:50},
+                            {title: "Missing DLC", field: "dlc.name", headerFilter:"input", formatter:"textarea", widthGrow:3, minWidth:200},
+                            {title: "DLC ID", field: "dlc.id", headerFilter:"input", width:150},
+                            {title: "Release date", field: "dlc.release_date", sorter:"date", sorterParams:{format:"YYYY-MM-DD", alignEmptyValues:"bottom"}, width:125, formatter: function (cell) {
                                 const content = document.createElement("span");
                                 content.textContent = cell.getValue() || "Unknown";
                                 return content;
                             }},
-                            {title: "Title", field: "game.name", headerFilter:"input", formatter:"textarea", width:350},
-                            {title: "Title ID", field: "game.id", headerFilter:"input"}
+                            {title: "Title", field: "game.name", headerFilter:"input", formatter:"textarea", widthGrow:2, minWidth:150},
+                            {title: "Title ID", field: "game.id", headerFilter:"input", width:150}
                         ],
                     }, "missing_dlc", browserStorage()), "dlc"), "missing_dlc");
                 }
