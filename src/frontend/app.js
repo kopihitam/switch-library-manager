@@ -28,6 +28,7 @@ import {
 } from './wailsjs/runtime/runtime.js'
 import { registerRescanShortcuts } from './rescan_shortcuts.js'
 import { exportTableXLSX } from './xlsx_export.js'
+import { browserStorage, rememberColumnOrder } from './column_order.js'
 
 $(function () {
 
@@ -853,7 +854,7 @@ $(function () {
                 });
                 $(target).html(html);
                 if (missingDlcRows.length) {
-                    createTable("#dlc-table", gameDetailsTableOptions({
+                    createTable("#dlc-table", gameDetailsTableOptions(rememberColumnOrder({
                         layout:"fitDataStretch",
                         sortOrderReverse:true,
                         initialSort:[
@@ -876,7 +877,7 @@ $(function () {
                             {title: "Title", field: "game.name", headerFilter:"input", formatter:"textarea", width:350},
                             {title: "Title ID", field: "game.id", headerFilter:"input"}
                         ],
-                    }, "dlc"), "missing_dlc");
+                    }, "missing_dlc", browserStorage()), "dlc"), "missing_dlc");
                 }
             } else if (target === "#status") {
                 if (state.settings.paths.library_folder && !state.library){

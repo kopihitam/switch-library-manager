@@ -3,6 +3,7 @@ import {readFile} from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 import {exportTableXLSX, reportFromExportList} from "../frontend/xlsx_export.js";
+import {rememberColumnOrder} from "../frontend/column_order.js";
 
 const appSource = await readFile(new URL("../frontend/app.js", import.meta.url), "utf8");
 const tabulatorSource = await readFile(new URL("../frontend/lib/js/tabulator/tabulator.min.js", import.meta.url), "utf8");
@@ -80,6 +81,7 @@ test("all five GUI tabs supply the correct report kind to the export adapter", (
         missingGames: [{name: "test"}]
     };
     const context = {state, $: () => ui, hideCurrentTab() {}, gameDetailsTableOptions: value => value, tableOptions: value => value,
+        rememberColumnOrder, browserStorage: () => null,
         createTable(selector, options, kind) {captured.push({selector, options, kind});}};
     vm.createContext(context);
     vm.runInContext(appSource.slice(start, end), context);
@@ -116,6 +118,7 @@ test("Missing DLC sorts newest releases across games and exports dates with blan
             ]
         },
         $: () => ui, hideCurrentTab() {}, gameDetailsTableOptions: value => value,
+        rememberColumnOrder, browserStorage: () => null,
         document: {createElement: () => ({textContent: ""})},
         createTable(selector, value) {assert.equal(selector, "#dlc-table"); options = value;}
     };
